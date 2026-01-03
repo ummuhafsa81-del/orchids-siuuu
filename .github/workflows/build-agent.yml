@@ -1,0 +1,46 @@
+name: Build Nova Agent
+
+on:
+  push:
+    paths:
+      - 'public/nova-agent.py'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install pyinstaller pyperclip
+      
+      - name: Build EXE
+        run: |
+          pyinstaller --onefile --noconsole --name NovaAgent public/nova-agent.py
+      
+      - name: Upload EXE as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NovaAgent-Windows
+          path: dist/NovaAgent.exe
+          retention-days: 90
+      
+      - name: Upload to Supabase Storage
+        run: |
+          $headers = @{
+            "Authorization" = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwYmNnYnB6b2pyYWtna3ZpbGFzIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2Njc5ODQ2NSwiZXhwIjoyMDgyMzc0NDY1fQ.IJ1FdI0MPCxTW12MxoNhQUdA8Hw27aPiCVVFJJRZj0U"
+            "Content-Type" = "application/octet-stream"
+            "x-upsert" = "true"
+          }
+          $uri = "https://qpbcgbpzojrakgkvilas.supabase.co/storage/v1/object/downloads/NovaAgent.exe"
+          Invoke-RestMethod -Uri $uri -Method Post -Headers $headers -InFile "dist/NovaAgent.exe"
+          Write-Host "Uploaded to Supabase Storage"

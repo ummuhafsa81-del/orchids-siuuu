@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nova Local Agent</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+      min-height: 100vh;
+      color: #e0e0e0;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 20px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+    }
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #fff, #a5b4fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+    .subtitle { color: #888; font-size: 1.1rem; }
+    .consent-panel {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    .consent-panel h2 {
+      color: #f59e0b;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .permission-list {
+      list-style: none;
+      margin-bottom: 25px;
+    }
+    .permission-list li {
+      padding: 12px 15px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .permission-list li input {
+      width: 20px;
+      height: 20px;
+      accent-color: #6366f1;
+    }
+    .consent-actions {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+    button {
+      padding: 14px 32px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-approve {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+    }
+    .btn-approve:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(16, 185, 129, 0.4); }
+    .btn-deny {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-deny:hover { background: rgba(239, 68, 68, 0.2); border-color: #ef4444; }
+    .task-panel {
+      display: none;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 30px;
+    }
+    .task-panel.active { display: block; }
+    .task-input {
+      width: 100%;
+      padding: 16px;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      margin-bottom: 20px;
+      resize: vertical;
+      min-height: 100px;
+    }
+    .task-input:focus { outline: none; border-color: #6366f1; }
+    .output-area {
+      background: #0a0a0f;
+      border-radius: 10px;
+      padding: 20px;
+      font-family: 'Consolas', monospace;
+      font-size: 0.9rem;
+      max-height: 400px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .output-line { margin-bottom: 8px; }
+    .output-line.info { color: #60a5fa; }
+    .output-line.success { color: #34d399; }
+    .output-line.error { color: #f87171; }
+    .output-line.warning { color: #fbbf24; }
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px;
+      background: rgba(99, 102, 241, 0.1);
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #10b981;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .file-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .file-btn {
+      padding: 12px;
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+    }
+    .file-btn:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">⚡</div>
+      <h1>Nova Local Agent</h1>
+      <p class="subtitle">Autonomous task execution on your machine</p>
+    </div>
+
+    <div class="consent-panel" id="consentPanel">
+      <h2>⚠️ Permission Request</h2>
+      <p style="margin-bottom: 20px; color: #aaa;">
+        Nova Local Agent requests the following permissions to execute tasks on your machine:
+      </p>
+      <ul class="permission-list">
+        <li>
+          <input type="checkbox" id="perm-files" checked>
+          <label for="perm-files"><strong>File System Access</strong> - Read and write files in selected directories</label>
+        </li>
+        <li>
+          <input type="checkbox" id="perm-clipboard" checked>
+          <label for="perm-clipboard"><strong>Clipboard Access</strong> - Copy and paste content</label>
+        </li>
+        <li>
+          <input type="checkbox" id="perm-network" checked>
+          <label for="perm-network"><strong>Network Requests</strong> - Fetch data from APIs</label>
+        </li>
+        <li>
+          <input type="checkbox" id="perm-storage" checked>
+          <label for="perm-storage"><strong>Local Storage</strong> - Save preferences and task history</label>
+        </li>
+      </ul>
+      <div class="consent-actions">
+        <button class="btn-approve" onclick="approveConsent()">✓ Approve & Start</button>
+        <button class="btn-deny" onclick="denyConsent()">✕ Deny</button>
+      </div>
+    </div>
+
+    <div class="task-panel" id="taskPanel">
+      <div class="status-bar">
+        <div class="status-dot"></div>
+        <span>Agent Active</span>
+        <span style="margin-left: auto; color: #888;">Permissions: <span id="permCount">4</span>/4</span>
+      </div>
+
+      <div class="file-actions">
+        <button class="file-btn" onclick="openFile()">📂 Open File</button>
+        <button class="file-btn" onclick="saveFile()">💾 Save File</button>
+        <button class="file-btn" onclick="openFolder()">📁 Open Folder</button>
+        <button class="file-btn" onclick="readClipboard()">📋 Read Clipboard</button>
+      </div>
+
+      <textarea class="task-input" id="taskInput" placeholder="Enter a task for the agent to execute...&#10;&#10;Examples:&#10;• Read the contents of a file&#10;• Create a new text file with content&#10;• Fetch data from an API&#10;• Process and transform text"></textarea>
+      
+      <button class="btn-approve" style="width: 100%; margin-bottom: 20px;" onclick="executeTask()">
+        ▶ Execute Task
+      </button>
+
+      <div class="output-area" id="output">
+        <div class="output-line info">[Nova Agent] Ready to execute tasks...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let permissions = {
+      files: true,
+      clipboard: true,
+      network: true,
+      storage: true
+    };
+    let fileHandle = null;
+    let dirHandle = null;
+
+    function log(message, type = 'info') {
+      const output = document.getElementById('output');
+      const time = new Date().toLocaleTimeString();
+      output.innerHTML += `<div class="output-line ${type}">[${time}] ${message}</div>`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function approveConsent() {
+      permissions.files = document.getElementById('perm-files').checked;
+      permissions.clipboard = document.getElementById('perm-clipboard').checked;
+      permissions.network = document.getElementById('perm-network').checked;
+      permissions.storage = document.getElementById('perm-storage').checked;
+
+      const count = Object.values(permissions).filter(Boolean).length;
+      document.getElementById('permCount').textContent = count;
+
+      document.getElementById('consentPanel').style.display = 'none';
+      document.getElementById('taskPanel').classList.add('active');
+
+      if (permissions.storage) {
+        localStorage.setItem('nova-agent-consent', JSON.stringify(permissions));
+      }
+
+      log('Consent approved. Agent initialized with ' + count + ' permissions.', 'success');
+    }
+
+    function denyConsent() {
+      log('Consent denied. Agent cannot operate without permissions.', 'error');
+      document.querySelector('.consent-panel').innerHTML = `
+        <h2 style="color: #ef4444;">Access Denied</h2>
+        <p style="color: #888;">The agent requires permissions to function. Refresh to try again.</p>
+      `;
+    }
+
+    async function openFile() {
+      if (!permissions.files) {
+        log('File permission denied', 'error');
+        return;
+      }
+      try {
+        [fileHandle] = await window.showOpenFilePicker();
+        const file = await fileHandle.getFile();
+        const contents = await file.text();
+        log(`Opened: ${file.name} (${file.size} bytes)`, 'success');
+        log(`Content preview: ${contents.substring(0, 200)}${contents.length > 200 ? '...' : ''}`, 'info');
+      } catch (e) {
+        if (e.name !== 'AbortError') log('Error opening file: ' + e.message, 'error');
+      }
+    }
+
+    async function saveFile() {
+      if (!permissions.files) {
+        log('File permission denied', 'error');
+        return;
+      }
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'nova-output.txt',
+          types: [{ description: 'Text Files', accept: { 'text/plain': ['.txt'] } }]
+        });
+        const writable = await handle.createWritable();
+        const content = document.getElementById('taskInput').value || 'Nova Agent Output';
+        await writable.write(content);
+        await writable.close();
+        log(`File saved successfully!`, 'success');
+      } catch (e) {
+        if (e.name !== 'AbortError') log('Error saving file: ' + e.message, 'error');
+      }
+    }
+
+    async function openFolder() {
+      if (!permissions.files) {
+        log('File permission denied', 'error');
+        return;
+      }
+      try {
+        dirHandle = await window.showDirectoryPicker();
+        log(`Opened folder: ${dirHandle.name}`, 'success');
+        let fileCount = 0;
+        for await (const entry of dirHandle.values()) {
+          log(`  ${entry.kind === 'directory' ? '📁' : '📄'} ${entry.name}`, 'info');
+          fileCount++;
+          if (fileCount >= 20) {
+            log('  ... and more files', 'info');
+            break;
+          }
+        }
+      } catch (e) {
+        if (e.name !== 'AbortError') log('Error opening folder: ' + e.message, 'error');
+      }
+    }
+
+    async function readClipboard() {
+      if (!permissions.clipboard) {
+        log('Clipboard permission denied', 'error');
+        return;
+      }
+      try {
+        const text = await navigator.clipboard.readText();
+        log(`Clipboard content: ${text.substring(0, 200)}${text.length > 200 ? '...' : ''}`, 'success');
+      } catch (e) {
+        log('Error reading clipboard: ' + e.message, 'error');
+      }
+    }
+
+    async function executeTask() {
+      const task = document.getElementById('taskInput').value.trim();
+      if (!task) {
+        log('Please enter a task to execute', 'warning');
+        return;
+      }
+
+      log(`Executing task: "${task.substring(0, 50)}${task.length > 50 ? '...' : ''}"`, 'info');
+
+      // Simple task parser
+      const taskLower = task.toLowerCase();
+
+      if (taskLower.includes('fetch') || taskLower.includes('api') || taskLower.includes('get http')) {
+        if (!permissions.network) {
+          log('Network permission denied', 'error');
+          return;
+        }
+        const urlMatch = task.match(/https?:\/\/[^\s]+/);
+        if (urlMatch) {
+          try {
+            log(`Fetching: ${urlMatch[0]}`, 'info');
+            const response = await fetch(urlMatch[0]);
+            const data = await response.text();
+            log(`Response (${response.status}): ${data.substring(0, 500)}`, 'success');
+          } catch (e) {
+            log('Fetch error: ' + e.message, 'error');
+          }
+        } else {
+          log('No URL found in task. Include a full URL starting with http:// or https://', 'warning');
+        }
+      } else if (taskLower.includes('read file') || taskLower.includes('open file')) {
+        await openFile();
+      } else if (taskLower.includes('save') || taskLower.includes('create file') || taskLower.includes('write file')) {
+        await saveFile();
+      } else if (taskLower.includes('clipboard')) {
+        await readClipboard();
+      } else if (taskLower.includes('list') && taskLower.includes('folder')) {
+        await openFolder();
+      } else if (taskLower.includes('calculate') || taskLower.includes('math')) {
+        try {
+          const expr = task.replace(/[^0-9+\-*/().%\s]/g, '');
+          const result = eval(expr);
+          log(`Result: ${result}`, 'success');
+        } catch (e) {
+          log('Could not evaluate expression', 'error');
+        }
+      } else if (taskLower.includes('time') || taskLower.includes('date')) {
+        log(`Current time: ${new Date().toLocaleString()}`, 'success');
+      } else if (taskLower.includes('help')) {
+        log('Available commands:', 'info');
+        log('  • "read file" or "open file" - Open and read a file', 'info');
+        log('  • "save file" or "create file" - Save content to a file', 'info');
+        log('  • "list folder" - Browse a directory', 'info');
+        log('  • "fetch [URL]" - Make HTTP request', 'info');
+        log('  • "clipboard" - Read clipboard content', 'info');
+        log('  • "calculate [expression]" - Evaluate math', 'info');
+        log('  • "time" or "date" - Show current time', 'info');
+      } else {
+        log('Task received. Use "help" to see available commands.', 'warning');
+        log('For complex tasks, the agent needs explicit file/folder access via the buttons above.', 'info');
+      }
+    }
+
+    // Check for saved consent
+    window.onload = () => {
+      const saved = localStorage.getItem('nova-agent-consent');
+      if (saved) {
+        try {
+          const p = JSON.parse(saved);
+          document.getElementById('perm-files').checked = p.files;
+          document.getElementById('perm-clipboard').checked = p.clipboard;
+          document.getElementById('perm-network').checked = p.network;
+          document.getElementById('perm-storage').checked = p.storage;
+        } catch (e) {}
+      }
+    };
+
+    // Enter to execute
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        executeTask();
+      }
+    });
+  </script>
+</body>
+</html>
